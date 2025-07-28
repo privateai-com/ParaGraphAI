@@ -5,10 +5,11 @@
     border-top: 1px solid #ddd;
     border-right: 0;
     border-left: 0;
-    padding: 15px;
+    padding: var(--spacing-lg);
     display: flex;
-    gap: 10px;
+    gap: var(--spacing-md);
     justify-content: space-between;
+    align-items: flex-start;
   }
 
   .article-entry:nth-child(2n) {
@@ -20,7 +21,8 @@
   }
 
   .primary-article-info {
-    /* Стили для основной статьи, если нужно выделить */
+    flex: 1;
+    min-width: 0;
   }
 
   .primary-article-action-more {
@@ -30,8 +32,9 @@
   .primary-article-action-buttons {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--spacing-sm);
     min-width: 175px;
+    flex-shrink: 0;
   }
 
   .primary-article-action-buttons * {
@@ -41,9 +44,10 @@
   .linked-articles-container-head {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--spacing-md);
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
   }
 
   .linked-articles-container-head h4 {
@@ -81,7 +85,8 @@
   }
 
   .linked-articles-toggle:hover {
-    /* background-color: #e0e0e0; */
+    background-color: rgba(79, 70, 229, 0.05);
+    transform: translateY(-1px);
   }
   .linked-articles-container {
     display: none;
@@ -91,7 +96,6 @@
     left: 0;
     width: 100%;
     height: 100%;
-
     /* margin-top: 10px; */
     /* padding-left: 20px; */
     /* border-left: 2px solid #007bff; */

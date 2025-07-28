@@ -10,12 +10,14 @@
 
     .article-page{
         display: flex;
-        gap: 20px;
+        gap: var(--spacing-lg);
         flex: 1;
+        min-height: 0;
     }
 
     .article-page h2{
-        margin-top: 0px;
+        margin-top: 0;
+        margin-bottom: var(--spacing-md);
     }
 
     .article-page-column{
@@ -24,6 +26,7 @@
         max-height: 100%;
         position: relative;
         overflow: hidden;
+        min-width: 0;
     }
 
     .article-other-info .tab-container{
@@ -31,15 +34,18 @@
     }
 
      .article-page-column:first-child{
-        flex: 0.35;
+        flex: 0.4;
+        min-width: 300px;
      }
 
      .article-page-column:last-child{
-        flex: 0.65;
+        flex: 0.6;
+        min-width: 400px;
      }
 
     .detail-section {
-        padding-bottom: 15px;
+        padding-bottom: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
         /* border-bottom: 1px solid #eee; */
     }
     .detail-section h3 {
@@ -48,6 +54,8 @@
     }
     .metadata-grid {
         display: grid;
+        gap: var(--spacing-sm);
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         grid-template-columns: 150px 1fr;
         gap: 5px 15px;
     }
@@ -231,8 +239,9 @@
     .analyzed-segment-item {
         border: 1px solid #d1e7fd;
         background-color: #f8f9fa;
-        padding: 15px;
-        margin-bottom: 15px;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        border-radius: var(--border-radius);
         border-radius: 4px;
         /* position: relative; Для позиционирования кнопок */
     }
@@ -272,6 +281,74 @@
     }
 
  
+
+    /* Responsive Design for Article Detail Page */
+    @media (max-width: 1024px) {
+        .article-page-column:first-child {
+            min-width: 250px;
+        }
+        
+        .article-page-column:last-child {
+            min-width: 300px;
+        }
+        
+        .metadata-grid {
+            grid-template-columns: 1fr;
+            gap: var(--spacing-sm);
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .article-page {
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+        
+        .article-page-column:first-child,
+        .article-page-column:last-child {
+            flex: 1;
+            min-width: auto;
+            max-height: none;
+        }
+        
+        .article-page-column {
+            overflow: visible;
+        }
+        
+        .scrollable-content {
+            position: static !important;
+            height: auto !important;
+            overflow: visible !important;
+        }
+        
+        .tab-container {
+            position: static !important;
+        }
+        
+        .metadata-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .analyzed-segment-item {
+            padding: var(--spacing-sm);
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .article-page {
+            gap: var(--spacing-sm);
+        }
+        
+        .detail-section {
+            padding-bottom: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .analyzed-segment-item {
+            padding: var(--spacing-xs);
+            margin-bottom: var(--spacing-sm);
+        }
+    }
 </style>
 {% endblock %}
 
