@@ -594,7 +594,28 @@
         border: 2px solid var(--primary-color);
       }
 
+      /* Footer Styles */
+      footer {
+        margin-top: auto;
+      }
+      
+      footer a:hover {
+        text-decoration: underline;
+        opacity: 0.8;
+      }
+      
       /* Responsive Design Media Queries */
+      @media (max-width: 480px) {
+        footer div[style*="display: flex"] {
+          flex-direction: column;
+          gap: 10px !important;
+        }
+        
+        footer div[style*="font-size: 0.9em"] {
+          padding: 15px 10px !important;
+        }
+      }
+      
       @media (min-width: 1600px) {
         :root {
           --page-width: var(--page-width-desktop-large);
@@ -779,7 +800,14 @@
       {% endif %} {% block content %}{% endblock %}
     </div>
     <footer>
-      <p style="text-align: center; color: #777; font-size: 0.8em">&copy; {% now "Y" %} Scientific Papers AI App</p>
+      <div style="text-align: center; color: #777; font-size: 0.9em; padding: 20px 0; border-top: 1px solid #e5e5e5; margin-top: 40px;">
+        <p style="margin: 0 0 10px 0;">&copy; 2025 PrivateAI. All rights reserved.</p>
+        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+          <a href="https://privateai.com/" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">PrivateAI</a>
+          <a href="https://demo.privateai.com/" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">Demo</a>
+          <a href="https://www.privateai.com/legal" target="_blank" style="color: var(--primary-color); text-decoration: none; font-weight: 500;">Legal</a>
+        </div>
+      </div>
     </footer>
     {% block extra_js %}{% endblock %}
 
