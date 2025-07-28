@@ -1,5 +1,21 @@
 {% extends "base.html" %} {% load static %} {% load i18n %} {% block title %}{% trans 'Добавить статью' %}{% endblock %} {% block extra_head %}
-<style></style>
+<style>
+  /* Loading and feedback animations */
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  /* Enhanced form section transitions */
+  .form-section {
+    transition: all 0.3s ease;
+  }</style>
 {% endblock %} {% block content %}
 <div id="notifications-wrapper">
   <div id="notifications">
@@ -108,7 +124,7 @@
           <small style="color: #6c757d; font-size: 13px; margin-top: 5px; display: block;">{% trans 'Supported sources: PubMed, Europe PMC, bioRxiv, medRxiv' %}</small>
         </div>
         
-        <button type="submit" class="primary-button" style="width: 100%; padding: 15px; font-size: 16px; font-weight: 500;">{% trans 'Start Processing Article' %}</button>
+        <button type="submit" id="submit-button" class="primary-button" style="width: 100%; padding: 15px; font-size: 16px; font-weight: 500; position: relative; transition: all 0.3s ease;">{% trans 'Start Processing Article' %}</button>
       </form>
     </div>
   </div>
@@ -313,13 +329,98 @@
     this.style.boxShadow = 'none';
   });
 
+  // --- Visual Feedback Functions ---
+  function setButtonLoading(button, isLoading) {
+    if (isLoading) {
+      button.disabled = true;
+      button.style.background = '#6c757d';
+      button.style.cursor = 'not-allowed';
+      button.innerHTML = `
+        <span style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+            <path d="M21 12a9 9 0 11-6.219-8.56"/>
+          </svg>
+          Processing...
+        </span>
+      `;
+      
+      // Add pulsing effect to form section
+      const formSection = button.closest('.form-section');
+      formSection.style.boxShadow = '0 0 20px rgba(79, 70, 229, 0.3)';
+      formSection.style.borderColor = 'var(--primary-color)';
+    } else {
+      button.disabled = false;
+      button.style.background = 'var(--primary-color)';
+      button.style.cursor = 'pointer';
+      button.innerHTML = '{% trans "Start Processing Article" %}';
+      
+      // Remove pulsing effect
+      const formSection = button.closest('.form-section');
+      formSection.style.boxShadow = '';
+      formSection.style.borderColor = '#dee2e6';
+    }
+  }
+  
+  function showNotificationsPanel() {
+    const notificationsToggle = document.querySelector('#notifications-toggle-button');
+    const notificationsPanel = document.getElementById('notifications');
+    
+    if (notificationsToggle && notificationsPanel) {
+      // Show the notifications panel
+      notificationsPanel.style.display = 'block';
+      
+      // Add visual indicator to toggle button
+      notificationsToggle.style.background = 'var(--primary-color)';
+      notificationsToggle.style.color = 'white';
+      notificationsToggle.style.animation = 'pulse 2s infinite';
+      notificationsToggle.style.boxShadow = '0 0 15px rgba(79, 70, 229, 0.5)';
+      
+      // Scroll to notifications
+      notificationsPanel.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+      
+      // Add a badge or indicator
+      if (!notificationsToggle.querySelector('.processing-indicator')) {
+        const indicator = document.createElement('span');
+        indicator.className = 'processing-indicator';
+        indicator.style.cssText = `
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          background: #ff4757;
+          color: white;
+          border-radius: 50%;
+          width: 12px;
+          height: 12px;
+          font-size: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: pulse 1.5s infinite;
+        `;
+        indicator.textContent = '!';
+        notificationsToggle.style.position = 'relative';
+        notificationsToggle.appendChild(indicator);
+      }
+    }
+  }
+
   // --- Обработка формы ---
   articleProcessForm.addEventListener("submit", function (event) {
     event.preventDefault();
     const identifierValue = identifierValueInput.value.trim();
     const identifierType = identifierTypeSelect.value;
+    const submitButton = document.getElementById('submit-button');
 
     if (identifierValue) {
+      // Set button to loading state
+      setButtonLoading(submitButton, true);
+      
+      // Show notifications panel immediately
+      showNotificationsPanel();
+      
       addNotification({ payload: { status: "INFO", message: `Sending request to process ${identifierType}: ${identifierValue}...` } });
 
       // Using the API that triggers the dispatcher task
@@ -344,6 +445,25 @@
         .catch((error) => {
           console.error("Error calling process-article API:", error);
           addNotification({ payload: { status: "FAILURE", message: `API call error: ${error.message}` } });
+        })
+        .finally(() => {
+          // Reset button state after request completes
+          setTimeout(() => {
+            setButtonLoading(submitButton, false);
+            
+            // Clean up notifications toggle button after a delay
+            setTimeout(() => {
+              const notificationsToggle = document.querySelector('#notifications-toggle-button');
+              if (notificationsToggle) {
+                notificationsToggle.style.animation = '';
+                notificationsToggle.style.boxShadow = '';
+                const indicator = notificationsToggle.querySelector('.processing-indicator');
+                if (indicator) {
+                  indicator.remove();
+                }
+              }
+            }, 5000); // Clean up after 5 seconds
+          }, 1000); // Keep loading state for 1 second to show completion
         });
     }
   });
