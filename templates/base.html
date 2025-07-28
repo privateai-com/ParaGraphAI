@@ -13,7 +13,8 @@
       :root {
         --body-bg-color: #ffffff;
 
-        --page-width: 1200px;
+        --page-width: 1400px;
+        --page-width-desktop-large: 85%;
         --page-width-mobile: 95%;
         --page-width-tablet: 90%;
         --primary-color: #4f46e5;
@@ -594,6 +595,19 @@
       }
 
       /* Responsive Design Media Queries */
+      @media (min-width: 1600px) {
+        :root {
+          --page-width: var(--page-width-desktop-large);
+        }
+        
+        .container,
+        .container-wrap,
+        .page {
+          max-width: none;
+          width: var(--page-width-desktop-large);
+        }
+      }
+      
       @media (max-width: 1024px) {
         :root {
           --page-width: var(--page-width-tablet);
