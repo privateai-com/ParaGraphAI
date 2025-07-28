@@ -111,7 +111,7 @@
       notificationHtml += `<strong>${data.message || data.payload?.message}</strong>`;
     } else if (data.type === "task_notification" && data.payload) {
       const p = data.payload;
-      notificationHtml += `<strong>Task [${p.task_id || "N/A"}] для ${p.source_api || "Source"} (${p.identifier || "N/A"})</strong><br>`;
+      notificationHtml += `<strong>Task [${p.task_id || "N/A"}] for ${p.source_api || "Source"} (${p.identifier || "N/A"})</strong><br>`;
       notificationHtml += `Status: ${p.status}<br>`;
       notificationHtml += `Message: ${p.message}<br>`;
       if (p.progress_percent !== undefined) {
