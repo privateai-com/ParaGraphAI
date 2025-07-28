@@ -167,6 +167,55 @@
         text-align: center;
       }
 
+      .header-nav-wrap {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .main-nav {
+        display: flex;
+        gap: 8px;
+        background: rgba(79, 70, 229, 0.05);
+        padding: 8px;
+        border-radius: 12px;
+        border: 1px solid rgba(79, 70, 229, 0.1);
+      }
+
+      .nav-link {
+        color: #6b7280;
+        padding: 12px 20px;
+        font-size: 15px;
+        font-weight: 500;
+        display: inline-block;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        position: relative;
+        background: transparent;
+      }
+
+      .nav-link:hover {
+        color: var(--primary-color);
+        background: rgba(79, 70, 229, 0.08);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
+      }
+
+      .nav-link.current {
+        color: white;
+        background: var(--primary-color);
+        box-shadow: 0 2px 12px rgba(79, 70, 229, 0.3);
+        font-weight: 600;
+      }
+
+      .nav-link.current:hover {
+        background: var(--primary-color);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+      }
+
       .header-logo {
         padding: 10px;
         font-weight: 700;
@@ -451,7 +500,7 @@
         /* border: none; */
       }
 
-      nav a.current {
+      nav a.current:not(.nav-link) {
         color: var(--primary-color);
       }
 
@@ -551,8 +600,13 @@
                   <path d="M83.32 93.03C83.76 92.11 84.45 91.34 85.39 90.72C86.33 90.1 87.52 89.79 88.96 89.79C90.34 89.79 91.54 90.11 92.56 90.75C93.6 91.39 94.4 92.29 94.96 93.45C95.54 94.59 95.83 95.94 95.83 97.5C95.83 99.06 95.54 100.42 94.96 101.58C94.38 102.74 93.57 103.64 92.53 104.28C91.51 104.9 90.32 105.21 88.96 105.21C87.6 105.21 86.47 104.92 85.57 104.34C84.67 103.76 83.99 103.05 83.53 102.21L83.38 105H81.31V83.4H83.56V93.06L83.32 93.03ZM93.4 97.5C93.4 95.78 92.95 94.42 92.05 93.42C91.17 92.4 89.98 91.89 88.48 91.89C87.54 91.89 86.69 92.12 85.93 92.58C85.19 93.02 84.61 93.66 84.19 94.5C83.77 95.32 83.56 96.32 83.56 97.5C83.56 98.68 83.77 99.69 84.19 100.53C84.61 101.37 85.19 102.01 85.93 102.45C86.69 102.89 87.54 103.11 88.48 103.11C89.98 103.11 91.17 102.61 92.05 101.61C92.95 100.59 93.4 99.22 93.4 97.5ZM109.673 90H112.013L103.433 111H101.273L103.823 104.79L97.7634 90H100.223L105.023 102.12L109.673 90Z" fill="#4F46E5"/>
               </svg>
             </div>
-            <div class="header-logo-wrap">
-              <a class="header-logo" href="/articles">{% trans 'Scientific Articles AI' %}</a>
+            <div class="header-nav-wrap">
+              {% if user.is_authenticated %}
+              <nav class="header-nav main-nav">
+                <a targetName="articles" href="{% url 'article_list' %}" class="nav-link">{% trans 'My Articles' %}</a>
+                <a targetName="add_article" href="{% url 'submit_article' %}" class="nav-link">{% trans 'Add Article' %}</a>
+              </nav>
+              {% endif %}
             </div>
             <div class="header-right-side">
               {% if user.is_authenticated %}
@@ -570,16 +624,7 @@
         </div>
       </div>
     </header>
-    {% if user.is_authenticated %}
-    <div class="header-row-full-width sticky">
-      <div class="header-row">
-        <nav class="header-nav">
-          <a targetName="articles" href="{% url 'article_list' %}">{% trans 'My Articles' %}</a>
-          <a targetName="add_article" href="{% url 'submit_article' %}">{% trans 'Add Article' %}</a>
-        </nav>
-      </div>
-    </div>
-    {% endif %}
+
     <div class="page">
       {% if messages %}
       <ul class="messages">
@@ -599,7 +644,7 @@
         notifications: "notificationsShow",
       };
 
-      const navLinks = document.querySelectorAll(".header-nav a");
+      const navLinks = document.querySelectorAll(".nav-link");
       const pathname = window.location.pathname;
 
       const checkCurrentLink = (link) => {
