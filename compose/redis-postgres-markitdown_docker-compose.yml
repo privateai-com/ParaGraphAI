@@ -1,0 +1,92 @@
+# docker compose -f redis-postgres-markitdown_docker-compose.yml up -d
+# docker compose -f redis-postgres-markitdown_docker-compose.yml down -v
+# подключиться к контейнеру созданной бд можно командой:
+# docker exec -it article_postgres psql --username=article --dbname=article
+# данные контейнеров храняться в папке compose/tmp
+
+
+version: "3.8"
+
+services:
+
+  postgres:
+    image: postgres:14-alpine
+    container_name: article_postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    networks:
+      - article-network
+    environment:
+      POSTGRES_PASSWORD: article
+      POSTGRES_USER: article
+      POSTGRES_DB: article
+    volumes:
+      - ./tmp/postgres-data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: article_pgadmin
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: article@mail.com
+      PGADMIN_DEFAULT_PASSWORD: article
+    user: $UID:$GID
+    volumes:
+      - ./tmp/pgadmin-data:/var/lib/pgadmin:U
+    depends_on:
+      - postgres
+    networks:
+      - article-network
+
+  redis:
+    image: redis:latest
+    container_name: article_redis
+    command: redis-server
+    ports:
+      - 6379:6379
+    networks:
+      - article-network
+    volumes:
+      - ./tmp/redis:/var/lib/redis
+      - ./tmp/redis-config:/usr/local/etc/redis/redis.conf
+
+  markitdown:
+    image: markitdown-api:latest
+    container_name: markitdown-api
+    build:
+      context: ./markitdown
+      dockerfile: Dockerfile
+      args:
+        INSTALL_GIT: "false"
+        USERID: "nobody"
+        GROUPID: "nogroup"
+    ports:
+      - "8181:8181"
+    networks:
+      - article-network
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - EXIFTOOL_PATH=/usr/bin/exiftool
+      - FFMPEG_PATH=/usr/bin/ffmpeg
+    volumes:
+      - ./markitdown/packages:/app/packages
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+networks:
+  article-network:
+    driver: bridge
+
+volumes:
+  local_pgdata:
+  pgadmin-data:
+  redis:
+  redis-config:

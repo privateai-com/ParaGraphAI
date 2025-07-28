@@ -1,0 +1,259 @@
+{% extends "base.html" %} {% load static %} {% load i18n %} {% block title %}{% trans 'Мои статьи' %}{% endblock %} {% block extra_head %}
+<style>
+  .article-entry {
+    background: var(--bg-color-pair-n);
+    border-top: 1px solid #ddd;
+    border-right: 0;
+    border-left: 0;
+    padding: 15px;
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+  }
+
+  .article-entry:nth-child(2n) {
+    background: var(--body-bg-color);
+  }
+
+  .article-entry:first-child {
+    border-top: 0;
+  }
+
+  .primary-article-info {
+    /* Стили для основной статьи, если нужно выделить */
+  }
+
+  .primary-article-action-more {
+    margin-top: auto;
+  }
+
+  .primary-article-action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 175px;
+  }
+
+  .primary-article-action-buttons * {
+    white-space: nowrap;
+  }
+
+  .linked-articles-container-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .linked-articles-container-head h4 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .linked-articles-toggle {
+    width: 100%;
+    /* display: inline-block;
+    padding: 5px 10px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.9em; */
+  }
+
+  .linked-articles-toggle.dialog-toggle {
+    margin-left: auto;
+    margin-top: 0px;
+    height: 40px;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    justify-content: center;
+    background: none;
+    border-radius: 100%;
+    border: 2px solid var(--primary-color);
+  }
+
+  .linked-articles-toggle.dialog-toggle:hover {
+    background: none;
+  }
+
+  .linked-articles-toggle:hover {
+    /* background-color: #e0e0e0; */
+  }
+  .linked-articles-container {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    /* margin-top: 10px; */
+    /* padding-left: 20px; */
+    /* border-left: 2px solid #007bff; */
+  }
+
+  .linked-articles-container-outer {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--overlay-background-color);
+  }
+
+  .linked-articles-container-inner {
+    margin: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 80%;
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+    background: var(--body-bg-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  .linked-articles-scrollable-container {
+    max-height: 100%;
+    overflow-x: hidden;
+  }
+
+  .linked-articles-scrollable-container ul {
+    padding: 0;
+    margin: 0;
+  }
+
+  .linked-article-item {
+    font-size: 0.9em;
+    padding: 8px;
+    background: var(--body-bg-color);
+    list-style: none;
+    /* border-bottom: 1px dashed var(--bg-color-2n); */
+  }
+
+  .linked-article-item:nth-child(2n) {
+    background: var(--bg-color-pair-n);
+  }
+
+  .linked-article-item:last-child {
+    border-bottom: none;
+  }
+</style>
+{% endblock %} {% block content %} {% if articles_data %}
+<div class="container">
+  <!-- <h2>{% trans 'List of your articles' %}</h2> -->
+  <div id="article-list-container">
+    {% for item_data in articles_data %}
+    <div class="article-entry">
+      {# Information about the primary article #}
+      <div class="primary-article-info">
+        <h3>
+          <a href="{% url 'article_detail' item_data.primary_article.pk %}"> {{ item_data.primary_article.title|truncatewords:20 }} </a>
+        </h3>
+        <p><strong>DOI:</strong> {{ item_data.primary_article.doi|default:"N/A" }}</p>
+        <p><strong>PMID:</strong> {{ item_data.primary_article.pubmed_id|default:"N/A" }}</p>
+        {% comment %}
+        <p><strong>{% trans 'OA Status (Unpaywall):' %}</strong> {{ item_data.primary_article.oa_status|default:"Unknown" }}</p>
+        {% endcomment %} {% if item_data.primary_article.best_oa_pdf_url %}
+        <p><a href="{{ item_data.primary_article.best_oa_pdf_url }}" target="_blank" rel="noopener noreferrer">{% trans 'Link to OA PDF' %}</a></p>
+        {% elif item_data.primary_article.best_oa_url %}
+        <p><a href="{{ item_data.primary_article.best_oa_url }}" target="_blank" rel="noopener noreferrer">{% trans 'Link to OA version' %}</a></p>
+        {% endif %}
+        <p><small>{% trans 'Added/Updated:' %} {{ item_data.primary_article.updated_at|date:"d.m.Y H:i" }}</small></p>
+      </div>
+
+      <div class="primary-article-action-buttons">
+        {# Section for related articles #} {% if item_data.linked_articles %}
+        <div class="linked-articles-section">
+          <button type="button" class="linked-articles-toggle stroked-button" data-target="linked-articles-{{ item_data.primary_article.pk }}">
+            {% trans 'Related Articles' %} ({{ item_data.linked_articles|length }})
+          </button>
+          <div id="linked-articles-{{ item_data.primary_article.pk }}" class="linked-articles-container">
+            <div class="linked-articles-container-outer linked-articles-toggle" isNotChangableText data-target="linked-articles-{{ item_data.primary_article.pk }}">
+              <div class="linked-articles-container-inner">
+                <div class="linked-articles-container-head">
+                  <h4>{% trans 'Related Articles:' %}</h4>
+                  <button type="button" class="linked-articles-toggle dialog-toggle" isNotChangableText data-target="linked-articles-{{ item_data.primary_article.pk }}">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="pointer-events: none">
+                      <path d="M6.4 19L5 17.6L10.6 12L5 6.4L6.4 5L12 10.6L17.6 5L19 6.4L13.4 12L19 17.6L17.6 19L12 13.4L6.4 19Z" fill="black" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="linked-articles-scrollable-container">
+                  <ul>
+                    {% for linked_article in item_data.linked_articles %}
+                    <li class="linked-article-item">
+                      <a href="{% url 'article_detail' linked_article.pk %}"> {{ linked_article.title|truncatewords:15 }} </a>
+                      <small>(DOI: {{ linked_article.doi|default:"N/A" }})</small>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        <a class="primary-article-action-more primary-button" href="{% url 'article_detail' item_data.primary_article.pk %}">{% trans 'Read more' %}</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="container">
+  <p style="margin: auto; text-align: center">{% trans 'You have no articles added yet. You can' %} <a href="{% url 'submit_article' %}">{% trans 'add a new article' %}</a>.</p>
+</div>
+
+{% endif %} {% endblock %} {% block extra_js %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggleButtons = document.querySelectorAll(".linked-articles-toggle");
+
+    toggleButtons.forEach(function (button) {
+      button.addEventListener("click", function (e) {
+        const target = e.target;
+        const currentTarget = e.currentTarget;
+
+        if (target !== currentTarget) {
+          return;
+        }
+
+        const targetId = this.getAttribute("data-target");
+        const isNotChangableText = this.getAttribute("isNotChangableText");
+        const targetContainer = document.getElementById(targetId);
+
+        const BoolIsNotChangableText = !!isNotChangableText;
+
+        if (targetContainer) {
+          if (targetContainer.style.display === "none" || targetContainer.style.display === "") {
+            targetContainer.style.display = "block";
+            // Обновляем текст кнопки, сохраняя количество
+            const count = this.textContent.match(/\((\d+)\)/); // Извлекаем число в скобках
+            if (!BoolIsNotChangableText) {
+              // this.textContent = `Скрыть связанные статьи ${count ? count[0] : ""}`;
+              this.textContent = `Related Articles ${count ? count[0] : ""}`;
+            }
+          } else {
+            targetContainer.style.display = "none";
+            const count = this.textContent.match(/\((\d+)\)/);
+            if (!!BoolIsNotChangableText) {
+              this.textContent = `Related Articles ${count ? count[0] : ""}`;
+              // this.textContent = `Показать связанные статьи ${count ? count[0] : ""}`;
+            }
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

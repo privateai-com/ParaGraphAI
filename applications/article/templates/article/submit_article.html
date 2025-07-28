@@ -1,0 +1,175 @@
+{% extends "base.html" %} {% load static %} {% load i18n %} {% block title %}{% trans 'Добавить статью' %}{% endblock %} {% block extra_head %}
+<style></style>
+{% endblock %} {% block content %}
+<div id="notifications-wrapper">
+  <div id="notifications">
+    <p style="text-align: center; color: #6c757d; margin: 5px 0">{% trans 'Waiting for notifications...' %}</p>
+  </div>
+  <button id="notifications-toggle-button">
+    <svg class="toggle-button-closed-svg" width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g filter="url(#filter0_d_8537_320451)">
+        <path
+          fill-rule="evenodd"
+          clip-rule="evenodd"
+          d="M6.00066 9C6.00066 7.14348 6.73816 5.36301 8.05092 4.05025C9.36367 2.7375 11.1441 2 13.0007 2C14.8572 2 16.6377 2.7375 17.9504 4.05025C19.2632 5.36301 20.0007 7.14348 20.0007 9V12.764L21.8227 16.408C21.9065 16.5757 21.9461 16.7621 21.9377 16.9494C21.9293 17.1368 21.8731 17.3188 21.7745 17.4783C21.6759 17.6379 21.5382 17.7695 21.3744 17.8608C21.2106 17.9521 21.0262 18 20.8387 18H16.8747C16.6522 18.8582 16.1511 19.6183 15.4499 20.1609C14.7488 20.7035 13.8873 20.9979 13.0007 20.9979C12.1141 20.9979 11.2526 20.7035 10.5514 20.1609C9.85023 19.6183 9.3491 18.8582 9.12666 18H5.16266C4.97514 18 4.79072 17.9521 4.62693 17.8608C4.46314 17.7695 4.3254 17.6379 4.22681 17.4783C4.12822 17.3188 4.07204 17.1368 4.06361 16.9494C4.05518 16.7621 4.09479 16.5757 4.17866 16.408L6.00066 12.764V9ZM11.2687 18C11.4442 18.304 11.6967 18.5565 12.0007 18.732C12.3047 18.9075 12.6496 18.9999 13.0007 18.9999C13.3517 18.9999 13.6966 18.9075 14.0006 18.732C14.3046 18.5565 14.5571 18.304 14.7327 18H11.2687ZM13.0007 4C11.6746 4 10.4028 4.52678 9.46513 5.46447C8.52745 6.40215 8.00066 7.67392 8.00066 9V12.764C8.00064 13.0743 7.9284 13.3804 7.78966 13.658L6.61966 16H19.3827L18.2127 13.658C18.0736 13.3805 18.001 13.0744 18.0007 12.764V9C18.0007 7.67392 17.4739 6.40215 16.5362 5.46447C15.5985 4.52678 14.3267 4 13.0007 4Z"
+          fill="black"
+        ></path>
+      </g>
+    </svg>
+    <svg class="toggle-button-opened-svg" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="..." fill="black" />
+    </svg>
+  </button>
+</div>
+
+<div class="container">
+  <div class="form-container-contained">
+    <h2>{% trans 'Add or Update Article' %}</h2>
+    <h3>{% trans 'Currently only articles in the bio/med domain are supported from PUBMED, EUROPEPMC, BIORXIV/MEDRXIV' %}</h3>
+    <p>{% trans 'Enter the article identifier (e.g., DOI, PMID) to start processing.' %}</p>
+
+    <form id="articleProcessForm" style="margin-bottom: 20px">
+      <div>
+        <label for="identifier_type">{% trans 'Identifier Type:' %}</label>
+        <select id="identifier_type" name="type">
+          <option value="DOI" selected>DOI</option>
+          <option value="PMID">PMID</option>
+          {% comment %}
+          <option value="ARXIV">ARXIV ID</option>
+          {% endcomment %}
+        </select>
+      </div>
+      <div>
+        <label for="identifier_value">{% trans 'Identifier Value:' %}</label>
+        <input type="text" id="identifier_value" name="identifier" placeholder="e.g., 10.1038/nature12373" required />
+      </div>
+      <button type="submit" class="primary-button">{% trans 'Start Processing' %}</button>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  const notificationsDivSubmit = document.getElementById("notifications"); // Указывает на новый #notifications
+
+  const notificationsDiv = document.getElementById("notifications");
+  const articleProcessForm = document.getElementById("articleProcessForm");
+  const identifierValueInput = document.getElementById("identifier_value");
+  const identifierTypeSelect = document.getElementById("identifier_type");
+  const currentUserId = "{{ user_id }}"; // Получаем из контекста Django
+
+  // --- WebSocket для уведомлений ---
+  let ws_protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  let ws_url = `${ws_protocol}//${window.location.host}/ws/notifications/`;
+  let socket;
+
+  function connectWebSocket() {
+    if (!currentUserId || currentUserId === "None") {
+      console.warn("User is not authenticated, WebSocket will not be connected.");
+      notificationsDiv.innerHTML = '<div class="status-WARNING">You are not authenticated. Notifications will not be received.</div>';
+      return;
+    }
+
+    console.log(`Attempting to connect WebSocket to ${ws_url} for user ${currentUserId}`);
+    socket = new WebSocket(ws_url);
+
+    socket.onopen = function (e) {
+      console.log("WebSocket connection established.");
+      addNotification({ payload: { status: "INFO", message: "WebSocket connection established." } });
+    };
+
+    socket.onmessage = function (event) {
+      const data = JSON.parse(event.data);
+      console.log("Received WebSocket message:", data);
+      addNotification(data);
+    };
+
+    socket.onclose = function (event) {
+      console.error("WebSocket connection closed:", event);
+      let reason = "";
+      if (event.reason) {
+        reason = ` Reason: ${event.reason}`;
+      }
+      addNotification({ payload: { status: "FAILURE", message: `WebSocket connection closed. Code: ${event.code}.${reason}` } });
+      // Attempt to reconnect in 5 seconds if the user is still on the page
+      setTimeout(connectWebSocket, 5000);
+    };
+
+    socket.onerror = function (error) {
+      console.error("WebSocket error:", error);
+      addNotification({ payload: { status: "FAILURE", message: "WebSocket connection error." } });
+    };
+  }
+
+  function addNotification(data) {
+    // Это функция для submit_article.html
+    const initialMsgSubmit = notificationsDivSubmit.querySelector('p[style*="text-align: center"]');
+    if (initialMsgSubmit) {
+      initialMsgSubmit.remove();
+    }
+    let notificationHtml = `<div class="status-${data.payload?.status || "INFO"}">`;
+    if (data.type === "connection_established") {
+      notificationHtml += `<strong>${data.message || data.payload?.message}</strong>`;
+    } else if (data.type === "task_notification" && data.payload) {
+      const p = data.payload;
+      notificationHtml += `<strong>Task [${p.task_id || "N/A"}] для ${p.source_api || "Source"} (${p.identifier || "N/A"})</strong><br>`;
+      notificationHtml += `Status: ${p.status}<br>`;
+      notificationHtml += `Message: ${p.message}<br>`;
+      if (p.progress_percent !== undefined) {
+        notificationHtml += `Progress: ${p.progress_percent}%<br>`;
+      }
+      if (p.article_id) {
+        notificationHtml += `Article ID: ${p.article_id} (Created: ${p.created === undefined ? "N/A" : p.created})<br>`;
+      }
+    } else if (data.payload) {
+      notificationHtml += `<strong>${data.payload.source_api || "System"} (${data.payload.identifier || "N/A"})</strong><br>`;
+      notificationHtml += `Status: ${data.payload.status}<br>`;
+      notificationHtml += `Message: ${data.payload.message}<br>`;
+      if (data.payload.progress_percent !== undefined) {
+        notificationHtml += `Progress: ${data.payload.progress_percent}%<br>`;
+      }
+    } else {
+      notificationHtml += JSON.stringify(data);
+    }
+    notificationHtml += `</div>`;
+    notificationsDivSubmit.insertAdjacentHTML("afterbegin", notificationHtml);
+  }
+
+  // Подключаем WebSocket при загрузке страницы
+  connectWebSocket();
+
+  // --- Обработка формы ---
+  articleProcessForm.addEventListener("submit", function (event) {
+    event.preventDefault();
+    const identifierValue = identifierValueInput.value.trim();
+    const identifierType = identifierTypeSelect.value;
+
+    if (identifierValue) {
+      addNotification({ payload: { status: "INFO", message: `Sending request to process ${identifierType}: ${identifierValue}...` } });
+
+      // Using the API that triggers the dispatcher task
+      fetch(`/api/articles/process-article/?identifier=${encodeURIComponent(identifierValue)}&type=${encodeURIComponent(identifierType)}`)
+        .then((response) => {
+          if (!response.ok) {
+            // Attempt to read the error body, if available
+            return response.json().then((errData) => {
+              throw new Error(`Server error: ${response.status}. ${errData.error || JSON.stringify(errData)}`);
+            });
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Response from process-article API:", data);
+          if (data.pipeline_task_id) {
+            addNotification({ payload: { status: "SUCCESS", message: `Processing pipeline started. Task ID: ${data.pipeline_task_id}` } });
+          } else {
+            addNotification({ payload: { status: "FAILURE", message: `Error starting pipeline: ${data.error || JSON.stringify(data)}` } });
+          }
+        })
+        .catch((error) => {
+          console.error("Error calling process-article API:", error);
+          addNotification({ payload: { status: "FAILURE", message: `API call error: ${error.message}` } });
+        });
+    }
+  });
+</script>
+{% endblock %}
